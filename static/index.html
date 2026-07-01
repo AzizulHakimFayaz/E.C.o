@@ -1,0 +1,485 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>E.C.o — Graph-Memory Personal Assistant</title>
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Prism Code Highlighter (Tomorrow Night Theme) -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css">
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="styles.css?v=2">
+    <!-- Vis-Network for Graph View -->
+    <script type="text/javascript" src="https://unpkg.com/vis-network/standalone/umd/vis-network.min.js"></script>
+    <!-- Marked Markdown Parser -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/4.3.0/marked.min.js"></script>
+    <!-- Prism JS -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-python.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-json.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-bash.min.js"></script>
+</head>
+<body>
+    <!-- App Wrapper -->
+    <div class="app-container">
+        
+        <!-- Sidebar Navigation -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <div class="logo">
+                    <div class="logo-icon-container">
+                        <i class="fa-solid fa-brain logo-icon pulse-animation"></i>
+                    </div>
+                    <div class="logo-text">
+                        <span class="logo-title">E.C.o</span>
+                        <span class="logo-subtitle">Graph Memory AI</span>
+                    </div>
+                </div>
+                <button class="new-chat-btn" id="new-chat-btn">
+                    <i class="fa-solid fa-plus"></i> New Chat
+                </button>
+            </div>
+            
+            <div class="conversations-section">
+                <span class="section-title">Conversations</span>
+                <div class="conversations-list" id="conversations-list">
+                    <!-- Loaded dynamically -->
+                    <div class="loading-placeholder">
+                        <i class="fa-solid fa-circle-notch fa-spin"></i> Loading...
+                    </div>
+                </div>
+            </div>
+            
+            <div class="sidebar-footer">
+                <div class="user-profile">
+                    <div class="avatar">S</div>
+                    <div class="user-info">
+                        <span class="user-name">Shahriar</span>
+                        <span class="user-role">Primary User</span>
+                    </div>
+                </div>
+                
+                <!-- Status Badges -->
+                <div class="status-panel">
+                    <div class="status-item" id="status-sqlite">
+                        <span class="status-indicator active"></span>
+                        <span class="status-label">SQLite: Connected</span>
+                    </div>
+                    <div class="status-item" id="status-neo4j">
+                        <span class="status-indicator"></span>
+                        <span class="status-label">Neo4j: Inactive</span>
+                    </div>
+                    <div class="status-item" id="status-provider">
+                        <i class="fa-solid fa-network-wired status-icon"></i>
+                        <span class="status-label" id="provider-badge">OLLAMA</span>
+                    </div>
+                </div>
+            </div>
+        </aside>
+        
+        <!-- Main Content Area -->
+        <main class="main-content">
+            
+            <!-- Navbar / Header Controls -->
+            <header class="main-header">
+                <div class="tab-navigation">
+                    <button class="tab-btn active" data-tab="chat-tab">
+                        <i class="fa-regular fa-comment-dots"></i> Chat
+                    </button>
+                    <button class="tab-btn" data-tab="graph-tab" id="graph-tab-btn">
+                        <i class="fa-solid fa-circle-nodes"></i> Memory Graph
+                    </button>
+                    <button class="tab-btn" data-tab="rag-tab">
+                        <i class="fa-solid fa-database"></i> RAG Explorer
+                    </button>
+                    <button class="tab-btn" data-tab="manage-graph-tab">
+                        <i class="fa-solid fa-sliders"></i> Memory Manager
+                    </button>
+                    <button class="tab-btn" data-tab="settings-tab">
+                        <i class="fa-solid fa-gear"></i> Settings
+                    </button>
+                </div>
+                
+                <div class="header-actions">
+                    <button class="action-icon-btn" id="voice-mode-toggle" title="Toggle Client Voice Output (TTS)">
+                        <i class="fa-solid fa-volume-xmark text-muted"></i>
+                    </button>
+                    <button class="action-icon-btn" id="system-reload-btn" title="Sync / Reload App State">
+                        <i class="fa-solid fa-arrows-rotate"></i>
+                    </button>
+                </div>
+            </header>
+            
+            <!-- Tab Contents -->
+            <div class="tab-container">
+                
+                <!-- Chat Workspace -->
+                <section class="tab-panel active" id="chat-tab">
+                    <div class="chat-container">
+                        <!-- Message viewport -->
+                        <div class="messages-viewport" id="messages-viewport">
+                            <!-- Empty State Dashboard -->
+                            <div class="chat-empty-state" id="chat-empty-state">
+                                <div class="empty-hero">
+                                    <div class="glowing-orb">
+                                        <i class="fa-solid fa-robot"></i>
+                                    </div>
+                                    <h1>Meet E.C.o</h1>
+                                    <p>Your local-first, graph-memory-powered assistant. Let's create something together.</p>
+                                </div>
+                                <div class="suggested-queries">
+                                    <div class="query-card" onclick="setPrompt('Tell me about my active projects.')">
+                                        <i class="fa-solid fa-briefcase query-icon"></i>
+                                        <span>Show my projects</span>
+                                    </div>
+                                    <div class="query-card" onclick="setPrompt('What is my response style preference?')">
+                                        <i class="fa-solid fa-wand-magic-sparkles query-icon"></i>
+                                        <span>Style preferences</span>
+                                    </div>
+                                    <div class="query-card" onclick="setPrompt('Add a node for user Preference: language = English and Bengali mixed')">
+                                        <i class="fa-solid fa-diagram-project query-icon"></i>
+                                        <span>Add memory node</span>
+                                    </div>
+                                    <div class="query-card" onclick="setPrompt('Search memory for Bidwesh research papers.')">
+                                        <i class="fa-solid fa-magnifying-glass query-icon"></i>
+                                        <span>Search memory</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <!-- Actual chat bubbles container -->
+                            <div id="chat-bubbles" style="display: flex; flex-direction: column; gap: 20px; width: 100%;"></div>
+                        </div>
+                        
+                        <!-- Input controls -->
+                        <div class="chat-input-bar">
+                            <div class="input-actions">
+                                <button class="mic-btn" id="mic-btn" title="Speak to E.C.o (STT)">
+                                    <i class="fa-solid fa-microphone"></i>
+                                </button>
+                            </div>
+                            <div class="input-textarea-wrapper">
+                                <textarea id="chat-input" placeholder="Message E.C.o..." rows="1"></textarea>
+                            </div>
+                            <button class="send-btn" id="send-btn" title="Send Message">
+                                <i class="fa-solid fa-paper-plane"></i>
+                            </button>
+                        </div>
+                        
+                        <!-- Dictation Waveform overlay (hidden by default) -->
+                        <div class="dictation-overlay" id="dictation-overlay">
+                            <div class="waveform-container">
+                                <div class="wave-bar"></div>
+                                <div class="wave-bar"></div>
+                                <div class="wave-bar"></div>
+                                <div class="wave-bar"></div>
+                                <div class="wave-bar"></div>
+                                <div class="wave-bar"></div>
+                                <div class="wave-bar"></div>
+                            </div>
+                            <p class="dictation-status" id="dictation-status">Listening...</p>
+                            <button class="cancel-dictation-btn" id="cancel-dictation-btn">Cancel</button>
+                        </div>
+                    </div>
+                </section>
+                
+                <!-- Graph Memory View -->
+                <section class="tab-panel" id="graph-tab">
+                    <div class="graph-viewer-layout">
+                        <!-- Graph Canvas Container -->
+                        <div class="canvas-panel">
+                            <div class="canvas-header">
+                                <h3><i class="fa-solid fa-network-wired"></i> Neural Graph Visualization</h3>
+                                <span class="badge" id="graph-stats-badge">0 Nodes | 0 Edges</span>
+                            </div>
+                            <div id="graph-network-container" class="network-canvas">
+                                <!-- vis.js will draw here -->
+                            </div>
+                        </div>
+                        
+                        <!-- Inspector sidebar -->
+                        <div class="inspector-panel">
+                            <div class="inspector-header">
+                                <h3>Node Inspector</h3>
+                            </div>
+                            <div class="inspector-body" id="inspector-content">
+                                <div class="empty-inspector">
+                                    <i class="fa-solid fa-hand-pointer"></i>
+                                    <p>Select a node in the graph to inspect properties, update values, or delete connections.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+                
+                <!-- RAG Explorer Tab -->
+                <section class="tab-panel" id="rag-tab">
+                    <div class="data-panel">
+                        <div class="panel-header">
+                            <div>
+                                <h2>Vector Knowledge Base (RAG)</h2>
+                                <p class="subtitle">Embedded chunks indexed for contextual recall</p>
+                            </div>
+                            <div class="search-box">
+                                <i class="fa-solid fa-magnifying-glass search-icon"></i>
+                                <input type="text" id="rag-search-input" placeholder="Search document titles or content...">
+                            </div>
+                        </div>
+                        <div class="table-container">
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>ID</th>
+                                        <th>Title</th>
+                                        <th>Content Preview</th>
+                                        <th>Type</th>
+                                        <th>Created At</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="rag-table-body">
+                                    <!-- Loaded dynamically -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </section>
+                
+                <!-- Memory Graph Manager Tab -->
+                <section class="tab-panel" id="manage-graph-tab">
+                    <div class="management-layout">
+                        <!-- Add Node Form -->
+                        <div class="manage-card">
+                            <h3><i class="fa-solid fa-plus-circle"></i> Create Graph Entity</h3>
+                            <form id="create-node-form">
+                                <div class="form-group">
+                                    <label for="new-node-id">Entity Unique ID</label>
+                                    <input type="text" id="new-node-id" placeholder="e.g. user:shahriar, project:secret_app" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="new-node-name">Display Name</label>
+                                    <input type="text" id="new-node-name" placeholder="e.g. Shahriar, Secret App" required>
+                                </div>
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label for="new-node-type">Type</label>
+                                        <select id="new-node-type">
+                                            <option value="User">User</option>
+                                            <option value="Project">Project</option>
+                                            <option value="Preference">Preference</option>
+                                            <option value="Style">Style</option>
+                                            <option value="Topic">Topic</option>
+                                            <option value="Concept">Concept</option>
+                                            <option value="Source">Source</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="form-group">
+                                    <label for="new-node-metadata">Metadata (JSON format)</label>
+                                    <textarea id="new-node-metadata" placeholder='{"status": "Active", "priority": "high"}' rows="3"></textarea>
+                                </div>
+                                <button type="submit" class="submit-btn">Add Node</button>
+                            </form>
+                        </div>
+                        
+                        <!-- Add Edge Form -->
+                        <div class="manage-card">
+                            <h3><i class="fa-solid fa-link"></i> Link Graph Entities</h3>
+                            <form id="create-edge-form">
+                                <div class="form-group">
+                                    <label for="new-edge-source">Source Node ID</label>
+                                    <input type="text" id="new-edge-source" placeholder="e.g. user:shahriar" list="node-ids-datalist" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="new-edge-target">Target Node ID</label>
+                                    <input type="text" id="new-edge-target" placeholder="e.g. project:secret_app" list="node-ids-datalist" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="new-edge-type">Relationship Type</label>
+                                    <select id="new-edge-type">
+                                        <option value="WORKING_ON">WORKING_ON</option>
+                                        <option value="PREFERS">PREFERS</option>
+                                        <option value="WRITES_WITH">WRITES_WITH</option>
+                                        <option value="HAS_QUESTION">HAS_QUESTION</option>
+                                        <option value="HAS_FINDING">HAS_FINDING</option>
+                                        <option value="FROM_SOURCE">FROM_SOURCE</option>
+                                        <option value="INTERESTED_IN">INTERESTED_IN</option>
+                                        <option value="RELATED_TO">RELATED_TO</option>
+                                    </select>
+                                </div>
+                                <button type="submit" class="submit-btn">Create Relationship</button>
+                            </form>
+                        </div>
+                        
+                        <!-- Node/Edge lists for autocomplete -->
+                        <datalist id="node-ids-datalist"></datalist>
+                    </div>
+                    
+                    <!-- Nodes & Edges Directory lists -->
+                    <div class="directory-container">
+                        <div class="manage-card full-width">
+                            <h3><i class="fa-solid fa-list"></i> Memory Entities Directory</h3>
+                            <div class="table-container small-height">
+                                <table class="data-table" id="directory-nodes-table">
+                                    <thead>
+                                        <tr>
+                                            <th>ID</th>
+                                            <th>Name</th>
+                                            <th>Type</th>
+                                            <th>Metadata</th>
+                                            <th>Action</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="directory-nodes-body">
+                                        <!-- Loaded dynamically -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                        
+                        <div class="manage-card full-width">
+                            <h3><i class="fa-solid fa-route"></i> Relationships Directory</h3>
+                            <div class="table-container small-height">
+                                <table class="data-table" id="directory-edges-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Source ID</th>
+                                            <th>Relationship Type</th>
+                                            <th>Target ID</th>
+                                            <th>Action</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="directory-edges-body">
+                                        <!-- Loaded dynamically -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+                
+                <!-- Settings Tab -->
+                <section class="tab-panel" id="settings-tab">
+                    <div class="settings-layout">
+                        <form id="settings-form" class="settings-form">
+                            <h2>System Configurations</h2>
+                            <p class="subtitle">Manage API keys, Ollama details, and database toggle switches.</p>
+                            
+                            <div class="settings-card">
+                                <h3><i class="fa-solid fa-server"></i> LLM Provider</h3>
+                                <div class="form-group">
+                                    <label>Active Provider</label>
+                                    <div class="radio-group">
+                                        <label class="radio-label">
+                                            <input type="radio" name="active_provider" value="ollama" id="provider-ollama">
+                                            <span>Ollama (Local-first)</span>
+                                        </label>
+                                        <label class="radio-label">
+                                            <input type="radio" name="active_provider" value="groq" id="provider-groq">
+                                            <span>Groq (Cloud API)</span>
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="settings-card select-provider-panel ollama-settings">
+                                <h3>Ollama Server Configuration</h3>
+                                <div class="form-group">
+                                    <label for="ollama_url">Ollama Base URL</label>
+                                    <input type="url" id="ollama_url" placeholder="http://localhost:11434">
+                                </div>
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label for="ollama_chat_model">Ollama Chat Model</label>
+                                        <input type="text" id="ollama_chat_model" placeholder="qwen3:1.7b">
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="ollama_embedding_model">Ollama Embedding Model</label>
+                                        <input type="text" id="ollama_embedding_model" placeholder="nomic-embed-text">
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="settings-card select-provider-panel groq-settings">
+                                <h3>Groq Cloud Configuration</h3>
+                                <div class="form-group">
+                                    <label for="groq_api_key">Groq API Key</label>
+                                    <input type="password" id="groq_api_key" placeholder="gsk_...">
+                                </div>
+                                <div class="form-group">
+                                    <label for="groq_chat_model">Groq Chat Model</label>
+                                    <select id="groq_chat_model">
+                                        <option value="llama-3.3-70b-versatile">llama-3.3-70b-versatile (Fast Reasoning)</option>
+                                        <option value="llama-3.1-8b-instant">llama-3.1-8b-instant (Ultra Fast)</option>
+                                        <option value="mixtral-8x7b-32768">mixtral-8x7b-32768 (High Context)</option>
+                                        <option value="gemma2-9b-it">gemma2-9b-it (Google Light)</option>
+                                    </select>
+                                </div>
+                            </div>
+                            
+                            <div class="settings-card">
+                                <h3><i class="fa-solid fa-database"></i> Databases & Storage Paths</h3>
+                                <div class="form-group">
+                                    <label for="sqlite_db_path">SQLite Database File</label>
+                                    <input type="text" id="sqlite_db_path" placeholder="./eco_memory.db">
+                                </div>
+                                <div class="form-group">
+                                    <label for="chroma_db_path">ChromaDB Storage Directory</label>
+                                    <input type="text" id="chroma_db_path" placeholder="./chroma_db">
+                                </div>
+                                <div class="form-row flex-checkboxes">
+                                    <div class="form-group-checkbox">
+                                        <input type="checkbox" id="use_chroma">
+                                        <label for="use_chroma">Enable Chroma Vector DB RAG</label>
+                                    </div>
+                                    <div class="form-group-checkbox">
+                                        <input type="checkbox" id="use_neo4j">
+                                        <label for="use_neo4j">Enable Neo4j Graph DB</label>
+                                    </div>
+                                </div>
+                                
+                                <div class="neo4j-connection-subpanel" id="neo4j-connection-subpanel">
+                                    <div class="form-group">
+                                        <label for="neo4j_uri">Neo4j Bolt URI</label>
+                                        <input type="text" id="neo4j_uri" placeholder="bolt://localhost:7687">
+                                    </div>
+                                    <div class="form-row">
+                                        <div class="form-group">
+                                            <label for="neo4j_user">Neo4j Username</label>
+                                            <input type="text" id="neo4j_user" placeholder="neo4j">
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="neo4j_password">Neo4j Password</label>
+                                            <input type="password" id="neo4j_password" placeholder="password">
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="settings-card">
+                                <h3><i class="fa-solid fa-bolt"></i> Learning Preferences</h3>
+                                <div class="form-group-checkbox">
+                                    <input type="checkbox" id="fast_mode">
+                                    <label for="fast_mode">Enable Fast Mode (Extract knowledge in background thread)</label>
+                                </div>
+                            </div>
+                            
+                            <div class="settings-actions">
+                                <button type="submit" class="save-settings-btn" id="save-settings-btn">
+                                    <i class="fa-solid fa-floppy-disk"></i> Save Configurations
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </section>
+            </div>
+        </main>
+    </div>
+    
+    <!-- Scripts -->
+    <script src="app.js?v=2"></script>
+</body>
+</html>
