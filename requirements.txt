@@ -1,0 +1,16 @@
+# E.C.o — Graph-Memory Agentic Personal AI Assistant
+# Core (always required)
+networkx>=3.0
+requests>=2.28
+
+# Optional: Install for enhanced capabilities
+# chromadb>=0.4.0          # Vector database (fallback: SQLite)
+# neo4j>=5.0               # Graph database (fallback: SQLite + NetworkX)
+# playwright>=1.40         # Browser automation (fallback: urllib)
+
+# Voice Mode dependencies
+edge-tts
+pygame
+SpeechRecognition
+pyaudio
+
